@@ -1,6 +1,7 @@
 import { expectTypeOf, test } from 'vitest'
 import { createAtom, createStore } from '@tanstack/store'
 import {
+  _useStore,
   createStoreContext,
   useAtom,
   useCreateAtom,
@@ -8,7 +9,7 @@ import {
   useSelector,
   useStore,
 } from '../src'
-import type { Atom, ReadonlyStore } from '@tanstack/store'
+import type { Atom, ReadonlyStore, Store } from '@tanstack/store'
 
 test('useCreateAtom returns a writable atom for initial values', () => {
   const atom = useCreateAtom(12)
@@ -153,4 +154,24 @@ test('createStoreContext preserves keyed atom and store types', () => {
 
   const selected = useSelector(readonlyStore, (state) => state.value)
   expectTypeOf(selected).toExtend<number>()
+})
+
+test('_useStore returns actions for stores with actions', () => {
+  const store = createStore({ count: 0 }, ({ setState }) => ({
+    inc: () => setState((prev) => ({ count: prev.count + 1 })),
+  }))
+
+  const [selected, actions] = _useStore(store, (state) => state.count)
+
+  expectTypeOf(selected).toExtend<number>()
+  expectTypeOf(actions.inc).toBeFunction()
+})
+
+test('_useStore returns setState for plain stores', () => {
+  const store = createStore(0)
+
+  const [selected, setState] = _useStore(store, (state) => state)
+
+  expectTypeOf(selected).toExtend<number>()
+  expectTypeOf(setState).toEqualTypeOf<Store<number>['setState']>()
 })
